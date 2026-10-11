@@ -8,13 +8,13 @@ BEGIN
     WHERE DATABASE_NAME = 'PELMOREX_WEATHER_SOURCE_FROSTBYTE';
 
     IF (weather_db_exists > 0) THEN
-        EXECUTE IMMEDIATE $$
+        EXECUTE IMMEDIATE '
             CREATE OR REPLACE VIEW {{env}}_tasty_bytes.harmonized.daily_weather_v
-            COMMENT = 'Weather Source Daily History filtered to Tasty Bytes supported Cities'
-                AS
+            COMMENT = ''Weather Source Daily History filtered to Tasty Bytes supported Cities''
+            AS
             SELECT
                 hd.*,
-                TO_VARCHAR(hd.date_valid_std, 'YYYY-MM') AS yyyy_mm,
+                TO_VARCHAR(hd.date_valid_std, ''YYYY-MM'') AS yyyy_mm,
                 pc.city_name AS city,
                 c.country AS country_desc
             FROM PELMOREX_WEATHER_SOURCE_FROSTBYTE.onpoint_id.history_day hd
@@ -23,8 +23,10 @@ BEGIN
                 AND pc.country = hd.country
             JOIN {{env}}_tasty_bytes.raw_pos.country c
                 ON c.iso_country = hd.country
-                AND c.city = hd.city_name;
+                AND c.city = hd.city_name
+        ';
 
+        EXECUTE IMMEDIATE '
             CREATE OR REPLACE VIEW {{env}}_tasty_bytes.harmonized.weather_hamburg
             AS
             SELECT
@@ -43,14 +45,16 @@ BEGIN
                 AND fd.city_name = odv.primary_city
                 AND fd.country_desc = odv.country
             WHERE 1=1
-                AND fd.country_desc = 'Germany'
-                AND fd.city = 'Hamburg'
-                AND fd.yyyy_mm = '2022-02'
+                AND fd.country_desc = ''Germany''
+                AND fd.city = ''Hamburg''
+                AND fd.yyyy_mm = ''2022-02''
             GROUP BY fd.date_valid_std, fd.city_name, fd.country_desc
-            ORDER BY fd.date_valid_std ASC;
+            ORDER BY fd.date_valid_std ASC
+        ';
 
+        EXECUTE IMMEDIATE '
             CREATE OR REPLACE VIEW {{env}}_tasty_bytes.analytics.daily_city_metrics_v
-            COMMENT = 'Daily Weather Metrics and Orders Data'
+            COMMENT = ''Daily Weather Metrics and Orders Data''
             AS
             SELECT
                 fd.date_valid_std AS date,
@@ -67,10 +71,12 @@ BEGIN
                 ON fd.date_valid_std = DATE(odv.order_ts)
                 AND fd.city_name = odv.primary_city
                 AND fd.country_desc = odv.country
-            GROUP BY fd.date_valid_std, fd.city_name, fd.country_desc;
+            GROUP BY fd.date_valid_std, fd.city_name, fd.country_desc
+        ';
 
+        EXECUTE IMMEDIATE '
             CREATE OR REPLACE VIEW {{env}}_tasty_bytes.harmonized.windspeed_hamburg
-                AS
+            AS
             SELECT
                 dw.country_desc,
                 dw.city_name,
@@ -78,10 +84,10 @@ BEGIN
                 MAX(dw.max_wind_speed_100m_mph) AS max_wind_speed_100m_mph
             FROM harmonized.daily_weather_v dw
             WHERE 1=1
-                AND dw.country_desc IN ('Germany')
-                AND dw.city_name = 'Hamburg'
+                AND dw.country_desc IN (''Germany'')
+                AND dw.city_name = ''Hamburg''
             GROUP BY dw.country_desc, dw.city_name, dw.date_valid_std
-            ORDER BY dw.date_valid_std DESC;
-        $$;
+            ORDER BY dw.date_valid_std DESC
+        ';
     END IF;
 END;
