@@ -10,10 +10,11 @@ on:
     branches:
       - staging
       - main
+      - fix-missing-data
 
 jobs:
   deploy_data_environment:
-    # Only run when PR is merged or on direct push to environment branches
+    # Deploy on pushes to configured branches or when a PR is merged.
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
 
@@ -28,7 +29,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Determine environment based on target branch
+      # Deploy feature work to staging; keep main reserved for production.
       - name: Set environment
         id: set_env
         run: |
@@ -37,6 +38,9 @@ jobs:
           if [[ $TARGET_BRANCH == "staging" ]]; then
             echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
             echo "Environment set to staging"
+          elif [[ $TARGET_BRANCH == "fix-missing-data" ]]; then
+            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+            echo "Feature branch fix-missing-data will use staging"
           elif [[ $TARGET_BRANCH == "main" ]]; then
             echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
             echo "Environment set to production"
